@@ -39,6 +39,23 @@ std::vector<char> read_file(const std::string &path) {
   return out;
 }
 
+class error_message_handler : public kdu_core::kdu_message {
+ public:
+
+  void put_text(const char* msg) {
+    std::cout << msg;
+  }
+
+  virtual void flush(bool end_of_message = false) {
+    if (end_of_message) {
+        std::cout << std::endl;
+    }
+  }
+};
+
+static error_message_handler error_handler;
+
+
 int main(int argc, char *argv[]) {
   cxxopts::Options options("kdu_perf", "KDU SDK performance tester");
 
@@ -50,6 +67,8 @@ int main(int argc, char *argv[]) {
 
   auto result = options.parse(argc, argv);
 
+  kdu_core::kdu_customize_errors(&error_handler);
+
   std::vector<char> cs_buf = read_file(result["codestream"].as<std::string>());
 
   kdu_compressed_source_buffered buffer((kdu_byte *)cs_buf.data(),
@@ -57,6 +76,7 @@ int main(int argc, char *argv[]) {
 
   kdu_codestream c;
   c.create(&buffer);
+  c.enable_restart();
 
   kdu_dims dims;
   c.get_dims(0, dims);
@@ -131,9 +151,12 @@ int main(int argc, char *argv[]) {
     }
 
     d.finish();
+
+    buffer.seek(0);
+    c.restart(&buffer);
   }
 
   auto total_time = std::chrono::high_resolution_clock::now() - start;
 
-  std::cout << total_time.count();
+  std::cout << "Decodes per second: " << repetitions / std::chrono::duration<double>(total_time).count() << std::endl;
 }
