@@ -31,5 +31,5 @@ target_link_libraries(kdu_perf ${KDU_LIBRARY} ${CMAKE_DL_LIBS})
 
 enable_testing()
 
-# add_test(NAME "j2k_ht_ojph" COMMAND libench j2k_ht_ojph ${PROJECT_SOURCE_DIR}/src/test/resources/images/test1.png)
+add_test(NAME "ht" COMMAND kdu_perf -r 200 ${PROJECT_SOURCE_DIR}/src/test/resources/codestreams/ht.j2c)
 
