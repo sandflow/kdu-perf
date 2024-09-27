@@ -111,15 +111,13 @@ void run(int repetitions, const std::vector<char> &cs_buf, double &total_time) {
     is_signed[0] = false;
   }
 
-  /* gather statistics */
-
   auto start = std::chrono::high_resolution_clock::now();
 
   kdu_stripe_decompressor d;
 
   for (int i = 0; i < repetitions; i++) {
-
-    d.start(c);
+    d.start(c, /* force_precise */ false,
+            /* want_fastest */ true);
 
     if (is_planar) {
       kdu_int16 *planes[3] = {(kdu_int16 *)planes_buf[0].data(),
@@ -146,9 +144,9 @@ int main(int argc, char *argv[]) {
   cxxopts::Options options("kdu_perf", "KDU SDK performance tester");
 
   options.add_options()("r,repetitions", "Number of repetitions per thread",
-                        cxxopts::value<int>()->default_value("100"))
-                        ("t,threads", "Number of threads",
-                        cxxopts::value<int>()->default_value("1"))(
+                        cxxopts::value<int>()->default_value("100"))(
+      "t,threads", "Number of threads",
+      cxxopts::value<int>()->default_value("1"))(
       "codestream", "Path to input codestream", cxxopts::value<std::string>());
 
   options.parse_positional({"codestream"});
@@ -166,14 +164,18 @@ int main(int argc, char *argv[]) {
   std::vector<std::thread> threads(0);
 
   for (int i = 0; i < total_times.size(); i++) {
-    threads.push_back(std::thread(run, repetitions, cs_buf, std::ref(total_times[i])));
+    threads.push_back(
+        std::thread(run, repetitions, cs_buf, std::ref(total_times[i])));
   }
 
   for (int i = 0; i < total_times.size(); i++) {
     threads[i].join();
   }
 
-  double total_time = std::accumulate(total_times.begin(), total_times.end(), 0.0) / total_times.size();
+  double total_time =
+      std::accumulate(total_times.begin(), total_times.end(), 0.0) /
+      total_times.size();
 
-  std::cout << "Decodes per second: " << total_times.size() * repetitions / total_time << std::endl;
+  std::cout << "Decodes per second: "
+            << total_times.size() * repetitions / total_time << std::endl;
 }
