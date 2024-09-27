@@ -6,6 +6,7 @@
 #include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <numeric>
 
 #include "cxxopts.hpp"
 #include "kdu_compressed.h"
@@ -18,7 +19,6 @@
 #include "kdu_stripe_decompressor.h"
 
 using namespace kdu_supp;
-
 
 std::vector<char> read_file(const std::string &path) {
   constexpr int READ_SZ = 4096;
@@ -41,36 +41,18 @@ std::vector<char> read_file(const std::string &path) {
 
 class error_message_handler : public kdu_core::kdu_message {
  public:
-
-  void put_text(const char* msg) {
-    std::cout << msg;
-  }
+  void put_text(const char *msg) { std::cout << msg; }
 
   virtual void flush(bool end_of_message = false) {
     if (end_of_message) {
-        std::cout << std::endl;
+      std::cout << std::endl;
     }
   }
 };
 
 static error_message_handler error_handler;
 
-
-int main(int argc, char *argv[]) {
-  cxxopts::Options options("kdu_perf", "KDU SDK performance tester");
-
-  options.add_options()("r,repetitions", "Codesteeam directory path",
-                        cxxopts::value<int>()->default_value("1000"))(
-      "codestream", "Path to input codestream", cxxopts::value<std::string>());
-
-  options.parse_positional({"codestream"});
-
-  auto result = options.parse(argc, argv);
-
-  kdu_core::kdu_customize_errors(&error_handler);
-
-  std::vector<char> cs_buf = read_file(result["codestream"].as<std::string>());
-
+void run(int repetitions, const std::vector<char> &cs_buf, double &total_time) {
   kdu_compressed_source_buffered buffer((kdu_byte *)cs_buf.data(),
                                         cs_buf.size());
 
@@ -131,12 +113,11 @@ int main(int argc, char *argv[]) {
 
   /* gather statistics */
 
-  int repetitions = result["repetitions"].as<int>();
-
   auto start = std::chrono::high_resolution_clock::now();
 
+  kdu_stripe_decompressor d;
+
   for (int i = 0; i < repetitions; i++) {
-    kdu_stripe_decompressor d;
 
     d.start(c);
 
@@ -150,13 +131,49 @@ int main(int argc, char *argv[]) {
       d.pull_stripe(planes_buf[0].data(), stripe_heights);
     }
 
-    d.finish();
+    d.reset();
 
     buffer.seek(0);
     c.restart(&buffer);
   }
 
-  auto total_time = std::chrono::high_resolution_clock::now() - start;
+  total_time = std::chrono::duration<double>(
+                   std::chrono::high_resolution_clock::now() - start)
+                   .count();
+}
 
-  std::cout << "Decodes per second: " << repetitions / std::chrono::duration<double>(total_time).count() << std::endl;
+int main(int argc, char *argv[]) {
+  cxxopts::Options options("kdu_perf", "KDU SDK performance tester");
+
+  options.add_options()("r,repetitions", "Number of repetitions per thread",
+                        cxxopts::value<int>()->default_value("100"))
+                        ("t,threads", "Number of threads",
+                        cxxopts::value<int>()->default_value("1"))(
+      "codestream", "Path to input codestream", cxxopts::value<std::string>());
+
+  options.parse_positional({"codestream"});
+
+  auto result = options.parse(argc, argv);
+
+  kdu_core::kdu_customize_errors(&error_handler);
+
+  std::vector<char> cs_buf = read_file(result["codestream"].as<std::string>());
+
+  int repetitions = result["repetitions"].as<int>();
+
+  std::vector<double> total_times(result["threads"].as<int>());
+
+  std::vector<std::thread> threads(0);
+
+  for (int i = 0; i < total_times.size(); i++) {
+    threads.push_back(std::thread(run, repetitions, cs_buf, std::ref(total_times[i])));
+  }
+
+  for (int i = 0; i < total_times.size(); i++) {
+    threads[i].join();
+  }
+
+  double total_time = std::accumulate(total_times.begin(), total_times.end(), 0.0) / total_times.size();
+
+  std::cout << "Decodes per second: " << total_times.size() * repetitions / total_time << std::endl;
 }

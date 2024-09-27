@@ -25,7 +25,7 @@ include_directories(ext/cxxopts/include)
 
 file(GLOB SRC_FILES src/main/cpp/*)
 add_executable(kdu_perf ${SRC_FILES})
-target_link_libraries(kdu_perf ${KDU_LIBRARY} ${CMAKE_DL_LIBS})
+target_link_libraries(kdu_perf ${KDU_LIBRARY} ${CMAKE_DL_LIBS} pthread)
 
 # tests
 
