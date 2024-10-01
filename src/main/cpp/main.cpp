@@ -137,7 +137,8 @@ void run(int repetitions, const std::vector<char> &cs_buf, double &avg_time) {
 
   avg_time = std::chrono::duration<double>(
                  std::chrono::high_resolution_clock::now() - start)
-                 .count() / repetitions;
+                 .count() /
+             repetitions;
 }
 
 int main(int argc, char *argv[]) {
@@ -159,13 +160,15 @@ int main(int argc, char *argv[]) {
 
   int repetitions = result["repetitions"].as<int>();
 
-  std::vector<double> avg_times(result["threads"].as<int>());
+  int num_threads = result["threads"].as<int>();
+
+  std::vector<double> avg_times(num_threads);
 
   std::vector<std::thread> threads(0);
 
   auto start = std::chrono::high_resolution_clock::now();
 
-  for (int i = 0; i < avg_times.size(); i++) {
+  for (int i = 0; i < num_threads; i++) {
     threads.push_back(
         std::thread(run, repetitions, cs_buf, std::ref(avg_times[i])));
   }
@@ -178,12 +181,9 @@ int main(int argc, char *argv[]) {
                        std::chrono::high_resolution_clock::now() - start)
                        .count();
 
-  double avg_time = std::accumulate(avg_times.begin(), avg_times.end(), 0.0) /
-                    avg_times.size();
-
-  std::cout << "Average decodes per thread per second: " << 1 / avg_time
+  std::cout << "Average decodes per thread per second: " << num_threads / std::accumulate(avg_times.begin(), avg_times.end(), 0.0)
             << std::endl;
 
   std::cout << "Aggregate decodes per second: "
-            << repetitions * avg_times.size() / total_dur << std::endl;
+            << repetitions * num_threads / total_dur << std::endl;
 }
