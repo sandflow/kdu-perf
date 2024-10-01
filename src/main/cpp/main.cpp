@@ -152,7 +152,16 @@ int main(int argc, char *argv[]) {
 
   options.parse_positional({"codestream"});
 
-  auto result = options.parse(argc, argv);
+  options.positional_help("<path to j2c codestream>");
+
+  cxxopts::ParseResult result;
+
+  try {
+    result = options.parse(argc, argv);
+  } catch (cxxopts::exceptions::invalid_option_syntax e) {
+    std::cout << options.help() << std::endl;
+    exit(0);
+  }
 
   kdu_core::kdu_customize_errors(&error_handler);
 
@@ -181,7 +190,9 @@ int main(int argc, char *argv[]) {
                        std::chrono::high_resolution_clock::now() - start)
                        .count();
 
-  std::cout << "Average decodes per thread per second: " << num_threads / std::accumulate(avg_times.begin(), avg_times.end(), 0.0)
+  std::cout << "Average decodes per thread per second: "
+            << num_threads /
+                   std::accumulate(avg_times.begin(), avg_times.end(), 0.0)
             << std::endl;
 
   std::cout << "Aggregate decodes per second: "
