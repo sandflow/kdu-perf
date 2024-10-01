@@ -52,7 +52,7 @@ class error_message_handler : public kdu_core::kdu_message {
 
 static error_message_handler error_handler;
 
-void run(int repetitions, const std::vector<char> &cs_buf, double &total_time) {
+void run(int repetitions, const std::vector<char> &cs_buf, double &avg_time) {
   kdu_compressed_source_buffered buffer((kdu_byte *)cs_buf.data(),
                                         cs_buf.size());
 
@@ -135,9 +135,9 @@ void run(int repetitions, const std::vector<char> &cs_buf, double &total_time) {
     c.restart(&buffer);
   }
 
-  total_time = std::chrono::duration<double>(
-                   std::chrono::high_resolution_clock::now() - start)
-                   .count();
+  avg_time = std::chrono::duration<double>(
+                 std::chrono::high_resolution_clock::now() - start)
+                 .count() / repetitions;
 }
 
 int main(int argc, char *argv[]) {
@@ -159,23 +159,31 @@ int main(int argc, char *argv[]) {
 
   int repetitions = result["repetitions"].as<int>();
 
-  std::vector<double> total_times(result["threads"].as<int>());
+  std::vector<double> avg_times(result["threads"].as<int>());
 
   std::vector<std::thread> threads(0);
 
-  for (int i = 0; i < total_times.size(); i++) {
+  auto start = std::chrono::high_resolution_clock::now();
+
+  for (int i = 0; i < avg_times.size(); i++) {
     threads.push_back(
-        std::thread(run, repetitions, cs_buf, std::ref(total_times[i])));
+        std::thread(run, repetitions, cs_buf, std::ref(avg_times[i])));
   }
 
-  for (int i = 0; i < total_times.size(); i++) {
+  for (int i = 0; i < avg_times.size(); i++) {
     threads[i].join();
   }
 
-  double total_time =
-      std::accumulate(total_times.begin(), total_times.end(), 0.0) /
-      total_times.size();
+  auto total_dur = std::chrono::duration<double>(
+                       std::chrono::high_resolution_clock::now() - start)
+                       .count();
 
-  std::cout << "Decodes per second: "
-            << total_times.size() * repetitions / total_time << std::endl;
+  double avg_time = std::accumulate(avg_times.begin(), avg_times.end(), 0.0) /
+                    avg_times.size();
+
+  std::cout << "Average decodes per thread per second: " << 1 / avg_time
+            << std::endl;
+
+  std::cout << "Aggregate decodes per second: "
+            << repetitions * avg_times.size() / total_dur << std::endl;
 }
