@@ -72,9 +72,6 @@ void run(int repetitions, const std::vector<char> &cs_buf, double &avg_time) {
   if (num_comps != COMP_COUNT)
     throw std::runtime_error("Bad number of components");
 
-  int stripe_heights[COMP_COUNT] = {(int)dims.size.y, (int)dims.size.y,
-                                    (int)dims.size.y};
-
   bool is_planar = false;
   int bit_depth = c.get_bit_depth(0);
 
@@ -82,6 +79,12 @@ void run(int repetitions, const std::vector<char> &cs_buf, double &avg_time) {
     kdu_core::kdu_coords coords;
 
     c.get_subsampling(i, coords);
+
+    if ((i == 0 && coords.x != 1) || (coords.x != 1 && coords.x != 2))
+      throw std::runtime_error("Unsupported horizontal component subsampling");
+
+    if ((i == 0 && coords.y != 1) || (coords.y != 1 && coords.y != 2))
+      throw std::runtime_error("Unsupported vertical component subsampling");
 
     if (coords.x > 1 || coords.y > 1) is_planar = true;
 
@@ -96,20 +99,27 @@ void run(int repetitions, const std::vector<char> &cs_buf, double &avg_time) {
   int precisions[COMP_COUNT];
   bool is_signed[COMP_COUNT];
 
+  int nominal_stripe_height = 16;
+  int stripe_heights[COMP_COUNT];
+
   if (is_planar) {
     for (int i = 0; i < num_comps; i++) {
       kdu_core::kdu_coords coords;
       c.get_subsampling(i, coords);
 
-      planes_buf[i].resize(width * height * component_sz / coords.x / coords.y);
+      stripe_heights[i] = nominal_stripe_height / coords.y;
+      planes_buf[i].resize(width / coords.x * stripe_heights[i] * component_sz);
       precisions[i] = (int)bit_depth;
       is_signed[i] = false;
     }
   } else {
-    planes_buf[0].resize(width * height * component_sz * num_comps);
+    stripe_heights[0] = nominal_stripe_height;
+    planes_buf[0].resize(width * stripe_heights[0] * component_sz * num_comps);
     precisions[0] = (int)bit_depth;
     is_signed[0] = false;
   }
+
+  int stripe_count = 1 + ((height - 1.0) / nominal_stripe_height);
 
   auto start = std::chrono::high_resolution_clock::now();
 
@@ -119,22 +129,24 @@ void run(int repetitions, const std::vector<char> &cs_buf, double &avg_time) {
     d.start(c, /* force_precise */ false,
             /* want_fastest */ true);
 
-    if (is_planar) {
-      if (component_sz > 1) {
-        kdu_int16 *planes[3] = {(kdu_int16 *)planes_buf[0].data(),
-                                (kdu_int16 *)planes_buf[1].data(),
-                                (kdu_int16 *)planes_buf[2].data()};
+    for (int j = 0; j < stripe_count; j++) {
+      if (is_planar) {
+        if (component_sz > 1) {
+          kdu_int16 *planes[3] = {(kdu_int16 *)planes_buf[0].data(),
+                                  (kdu_int16 *)planes_buf[1].data(),
+                                  (kdu_int16 *)planes_buf[2].data()};
 
-        d.pull_stripe(planes, stripe_heights, NULL, NULL, precisions, is_signed);
+          d.pull_stripe(planes, stripe_heights, NULL, NULL, precisions, is_signed);
+        } else {
+          kdu_byte *planes[3] = {(kdu_byte *)planes_buf[0].data(),
+                                  (kdu_byte *)planes_buf[1].data(),
+                                  (kdu_byte *)planes_buf[2].data()};
+
+          d.pull_stripe(planes, stripe_heights, NULL, NULL, precisions);
+        }
       } else {
-        kdu_byte *planes[3] = {(kdu_byte *)planes_buf[0].data(),
-                                (kdu_byte *)planes_buf[1].data(),
-                                (kdu_byte *)planes_buf[2].data()};
-
-        d.pull_stripe(planes, stripe_heights, NULL, NULL, precisions);
+        d.pull_stripe(planes_buf[0].data(), stripe_heights);
       }
-    } else {
-      d.pull_stripe(planes_buf[0].data(), stripe_heights);
     }
 
     d.reset();
