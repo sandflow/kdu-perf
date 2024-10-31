@@ -120,11 +120,19 @@ void run(int repetitions, const std::vector<char> &cs_buf, double &avg_time) {
             /* want_fastest */ true);
 
     if (is_planar) {
-      kdu_int16 *planes[3] = {(kdu_int16 *)planes_buf[0].data(),
-                              (kdu_int16 *)planes_buf[1].data(),
-                              (kdu_int16 *)planes_buf[2].data()};
+      if (component_sz > 1) {
+        kdu_int16 *planes[3] = {(kdu_int16 *)planes_buf[0].data(),
+                                (kdu_int16 *)planes_buf[1].data(),
+                                (kdu_int16 *)planes_buf[2].data()};
 
-      d.pull_stripe(planes, stripe_heights, NULL, NULL, precisions, is_signed);
+        d.pull_stripe(planes, stripe_heights, NULL, NULL, precisions, is_signed);
+      } else {
+        kdu_byte *planes[3] = {(kdu_byte *)planes_buf[0].data(),
+                                (kdu_byte *)planes_buf[1].data(),
+                                (kdu_byte *)planes_buf[2].data()};
+
+        d.pull_stripe(planes, stripe_heights, NULL, NULL, precisions);
+      }
     } else {
       d.pull_stripe(planes_buf[0].data(), stripe_heights);
     }
