@@ -99,53 +99,53 @@ void run(int repetitions, const std::vector<char> &cs_buf, double &avg_time) {
   int precisions[COMP_COUNT];
   bool is_signed[COMP_COUNT];
 
-  int nominal_stripe_height = 16;
-  int stripe_heights[COMP_COUNT];
+  const int max_stripe_height = 64;
 
   if (is_planar) {
     for (int i = 0; i < num_comps; i++) {
       kdu_core::kdu_coords coords;
       c.get_subsampling(i, coords);
 
-      stripe_heights[i] = nominal_stripe_height / coords.y;
-      planes_buf[i].resize(width / coords.x * stripe_heights[i] * component_sz);
+      planes_buf[i].resize(width / coords.x * max_stripe_height * component_sz);
       precisions[i] = (int)bit_depth;
       is_signed[i] = false;
     }
   } else {
-    stripe_heights[0] = nominal_stripe_height;
-    planes_buf[0].resize(width * stripe_heights[0] * component_sz * num_comps);
+    planes_buf[0].resize(width * max_stripe_height * component_sz * num_comps);
     precisions[0] = (int)bit_depth;
     is_signed[0] = false;
   }
 
-  int stripe_count = 1 + ((height - 1.0) / nominal_stripe_height);
+  kdu_stripe_decompressor d;
+  int stripe_heights[COMP_COUNT];
 
   auto start = std::chrono::high_resolution_clock::now();
-
-  kdu_stripe_decompressor d;
 
   for (int i = 0; i < repetitions; i++) {
     d.start(c, /* force_precise */ false,
             /* want_fastest */ true);
 
-    for (int j = 0; j < stripe_count; j++) {
+    bool more_samples = true;
+
+    while (more_samples) {
+      d.get_recommended_stripe_heights(8, max_stripe_height, stripe_heights, NULL);
+
       if (is_planar) {
         if (component_sz > 1) {
           kdu_int16 *planes[3] = {(kdu_int16 *)planes_buf[0].data(),
                                   (kdu_int16 *)planes_buf[1].data(),
                                   (kdu_int16 *)planes_buf[2].data()};
 
-          d.pull_stripe(planes, stripe_heights, NULL, NULL, precisions, is_signed);
+          more_samples = d.pull_stripe(planes, stripe_heights, NULL, NULL, precisions, is_signed);
         } else {
           kdu_byte *planes[3] = {(kdu_byte *)planes_buf[0].data(),
                                   (kdu_byte *)planes_buf[1].data(),
                                   (kdu_byte *)planes_buf[2].data()};
 
-          d.pull_stripe(planes, stripe_heights, NULL, NULL, precisions);
+          more_samples = d.pull_stripe(planes, stripe_heights, NULL, NULL, precisions);
         }
       } else {
-        d.pull_stripe(planes_buf[0].data(), stripe_heights);
+        more_samples = d.pull_stripe(planes_buf[0].data(), stripe_heights);
       }
     }
 
