@@ -39,7 +39,7 @@ std::vector<char> read_file(const std::string &path) {
   return out;
 }
 
-class error_message_handler : public kdu_core::kdu_message {
+class error_message_handler : public kdu_core::kdu_thread_safe_message {
  public:
   void put_text(const char *msg) { std::cout << msg; }
 
@@ -52,7 +52,7 @@ class error_message_handler : public kdu_core::kdu_message {
 
 static error_message_handler error_handler;
 
-void run(int repetitions, const std::vector<char> &cs_buf, double &avg_time) {
+void run(int repetitions, int num_fibers, const std::vector<char> &cs_buf, double &avg_time) {
   kdu_compressed_source_buffered buffer((kdu_byte *)cs_buf.data(),
                                         cs_buf.size());
 
@@ -116,6 +116,17 @@ void run(int repetitions, const std::vector<char> &cs_buf, double &avg_time) {
     is_signed[0] = false;
   }
 
+  // Construct multi-threaded processing environment
+  kdu_thread_env env;
+  env.create();
+  for (int t = 1; t < num_fibers; t++)
+    if (! env.add_thread())
+      throw std::runtime_error("Cannot allocate the requested number of fibers");
+
+  // Parametesr you can tune
+  const int dbuf_height=-1; // Select automatic policy
+
+  // Now for the decompression loop
   kdu_stripe_decompressor d;
   int stripe_heights[COMP_COUNT];
 
@@ -123,12 +134,17 @@ void run(int repetitions, const std::vector<char> &cs_buf, double &avg_time) {
 
   for (int i = 0; i < repetitions; i++) {
     d.start(c, /* force_precise */ false,
-            /* want_fastest */ true);
+            /* want_fastest */ true,
+            /* multi-threading environment or NULL */ &env,
+            NULL,
+            /* double-buffering height is important in MT apps */ dbuf_height);
 
     bool more_samples = true;
 
     while (more_samples) {
       d.get_recommended_stripe_heights(8, max_stripe_height, stripe_heights, NULL);
+      // NB: it is intended that you call get_recommended_stripe_height only
+      // once and then use in each d.pull_stripe call.
 
       if (is_planar) {
         if (component_sz > 1) {
@@ -149,7 +165,7 @@ void run(int repetitions, const std::vector<char> &cs_buf, double &avg_time) {
       }
     }
 
-    d.reset();
+    d.finish(); // use this function because `env' has not been destroyed
 
     buffer.seek(0);
     c.restart(&buffer);
@@ -166,7 +182,9 @@ int main(int argc, char *argv[]) {
 
   options.add_options()("r,repetitions", "Number of repetitions per thread",
                         cxxopts::value<int>()->default_value("100"))(
-      "t,threads", "Number of threads",
+      "t,threads", "Number of frames to process in parallel",
+      cxxopts::value<int>()->default_value("1"))(
+      "f,fibers", "Number of threads per frame",
       cxxopts::value<int>()->default_value("1"))(
       "codestream", "Path to input codestream", cxxopts::value<std::string>());
 
@@ -190,6 +208,12 @@ int main(int argc, char *argv[]) {
   int repetitions = result["repetitions"].as<int>();
 
   int num_threads = result["threads"].as<int>();
+  if (num_threads < 1)
+    throw std::runtime_error("Invalid number of threads");
+
+  int num_fibers = result["fibers"].as<int>();
+  if (num_fibers < 1)
+    throw std::runtime_error("Invalid number of fibers");
 
   std::vector<double> avg_times(num_threads);
 
@@ -199,7 +223,7 @@ int main(int argc, char *argv[]) {
 
   for (int i = 0; i < num_threads; i++) {
     threads.push_back(
-        std::thread(run, repetitions, cs_buf, std::ref(avg_times[i])));
+        std::thread(run, repetitions, num_fibers, cs_buf, std::ref(avg_times[i])));
   }
 
   for (int i = 0; i < avg_times.size(); i++) {
