@@ -123,9 +123,6 @@ void run(int repetitions, int num_fibers, const std::vector<char> &cs_buf, doubl
     if (! env.add_thread())
       throw std::runtime_error("Cannot allocate the requested number of fibers");
 
-  // Parametesr you can tune
-  const int dbuf_height=-1; // Select automatic policy
-
   // Now for the decompression loop
   kdu_stripe_decompressor d;
   int stripe_heights[COMP_COUNT];
@@ -135,9 +132,7 @@ void run(int repetitions, int num_fibers, const std::vector<char> &cs_buf, doubl
   for (int i = 0; i < repetitions; i++) {
     d.start(c, /* force_precise */ false,
             /* want_fastest */ true,
-            /* multi-threading environment or NULL */ &env,
-            NULL,
-            /* double-buffering height is important in MT apps */ dbuf_height);
+            /* multi-threading environment */ &env);
     d.get_recommended_stripe_heights(8, max_stripe_height, stripe_heights, NULL);
 
     bool more_samples = true;
