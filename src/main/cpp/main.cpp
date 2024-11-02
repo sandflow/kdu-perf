@@ -138,13 +138,10 @@ void run(int repetitions, int num_fibers, const std::vector<char> &cs_buf, doubl
             /* multi-threading environment or NULL */ &env,
             NULL,
             /* double-buffering height is important in MT apps */ dbuf_height);
+    d.get_recommended_stripe_heights(8, max_stripe_height, stripe_heights, NULL);
 
     bool more_samples = true;
-
     while (more_samples) {
-      d.get_recommended_stripe_heights(8, max_stripe_height, stripe_heights, NULL);
-      // NB: it is intended that you call get_recommended_stripe_height only
-      // once and then use in each d.pull_stripe call.
 
       if (is_planar) {
         if (component_sz > 1) {
