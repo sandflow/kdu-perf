@@ -125,10 +125,10 @@ void run(int repetitions, const std::vector<char> &cs_buf, double &avg_time) {
     d.start(c, /* force_precise */ false,
             /* want_fastest */ true);
 
-    bool more_samples = true;
+    d.get_recommended_stripe_heights(8, max_stripe_height, stripe_heights, NULL);
 
+    bool more_samples = true;
     while (more_samples) {
-      d.get_recommended_stripe_heights(8, max_stripe_height, stripe_heights, NULL);
 
       if (is_planar) {
         if (component_sz > 1) {
@@ -149,7 +149,7 @@ void run(int repetitions, const std::vector<char> &cs_buf, double &avg_time) {
       }
     }
 
-    d.reset();
+    d.finish();
 
     buffer.seek(0);
     c.restart(&buffer);
