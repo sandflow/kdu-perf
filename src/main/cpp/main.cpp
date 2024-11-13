@@ -178,6 +178,10 @@ int main(int argc, char *argv[]) {
 
   try {
     result = options.parse(argc, argv);
+    if (1 == argc) {
+      std::cout << options.help() << std::endl;
+      exit(0);
+    }
   } catch (cxxopts::exceptions::invalid_option_syntax e) {
     std::cout << options.help() << std::endl;
     exit(0);

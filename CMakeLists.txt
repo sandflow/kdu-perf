@@ -2,19 +2,22 @@ cmake_minimum_required (VERSION 3.2)
 
 project(kdu-perf)
 
+set(CMAKE_CXX_STANDARD 11)
+
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2")
 
 # Kakadu SDK support
 
 find_path(KDU_INCLUDE_DIR kdu_args.h PATH_SUFFIXES kakadu)
-find_library(KDU_LIBRARY NAMES kdu_a84R)
+find_library(KDU_LIBRARY NAMES kdu_v84R)
+find_library(KDU_AUX_LIBRARY NAMES kdu_a84R)
 
-if(KDU_INCLUDE_DIR AND KDU_LIBRARY)
+if(KDU_INCLUDE_DIR AND KDU_LIBRARY AND KDU_AUX_LIBRARY)
   set(KDU_PRESENT 1)
-  message("Kakadu SDK found: ${KDU_LIBRARY} and ${KDU_INCLUDE_DIR}")
+  message("Kakadu SDK found: ${KDU_LIBRARY} and ${KDU_AUX_LIBRARY} and ${KDU_INCLUDE_DIR}")
   include_directories(${KDU_INCLUDE_DIR})
 else()
-  message("Kakadu SDK not found: ${KDU_LIBRARY} and ${KDU_INCLUDE_DIR}.")
+  message("Kakadu SDK not found: ${KDU_LIBRARY} and ${KDU_AUX_LIBRARY} and ${KDU_INCLUDE_DIR}.")
 endif()
 
 # cxxopts
@@ -25,7 +28,7 @@ include_directories(ext/cxxopts/include)
 
 file(GLOB SRC_FILES src/main/cpp/*)
 add_executable(kdu_perf ${SRC_FILES})
-target_link_libraries(kdu_perf ${KDU_LIBRARY} ${CMAKE_DL_LIBS} pthread)
+target_link_libraries(kdu_perf ${KDU_LIBRARY} ${KDU_AUX_LIBRARY} ${CMAKE_DL_LIBS})
 
 # tests
 
