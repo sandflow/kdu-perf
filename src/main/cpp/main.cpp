@@ -183,7 +183,7 @@ int main(int argc, char *argv[]) {
 
   try {
     result = options.parse(argc, argv);
-    if( 0 == result.count("codestream") ) {
+    if(result.count("codestream") == 0) {
       print_usage_and_exit(options);
     }
   } catch (cxxopts::exceptions::invalid_option_syntax e) {
