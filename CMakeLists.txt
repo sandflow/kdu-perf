@@ -9,8 +9,8 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2")
 # Kakadu SDK support
 
 find_path(KDU_INCLUDE_DIR kdu_args.h PATH_SUFFIXES kakadu)
-find_library(KDU_LIBRARY NAMES kdu_v84R)
-find_library(KDU_AUX_LIBRARY NAMES kdu_a84R)
+find_library(KDU_LIBRARY NAMES kdu)
+find_library(KDU_AUX_LIBRARY NAMES kdu_aux)
 
 if(KDU_INCLUDE_DIR AND KDU_LIBRARY AND KDU_AUX_LIBRARY)
   set(KDU_PRESENT 1)
