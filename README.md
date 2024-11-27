@@ -17,7 +17,7 @@ and a separate license for Kakadu SDK must be obained.
 
 ## Prerequisites
 
-* Kakadu SDK library files (version 9.4.1+)
+* Kakadu SDK library files (version 8.4.1+)
 * C++11 toolchains
 * CMake
 
