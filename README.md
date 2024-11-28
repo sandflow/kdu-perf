@@ -62,3 +62,12 @@ and a separate license for Kakadu SDK must be obained.
     -DKDU_AUX_LIBRARY=~/software/kdu-sdk/v8_4_1-01908E/lib/Mac-arm-64-gcc/libkdu_a84R.so \
     -DKDU_INCLUDE_DIR=~/software/kdu-sdk/v8_4_1-01908E/managed/all_includes \
     ..
+
+### Mac (Xcode)
+
+    cmake \
+    -G Xcode \
+    -DKDU_LIBRARY=~/software/kdu-sdk/v8_4_1-01908E/lib/Mac-arm-64-gcc/libkdu_v84R.so \
+    -DKDU_AUX_LIBRARY=~/software/kdu-sdk/v8_4_1-01908E/lib/Mac-arm-64-gcc/libkdu_a84R.so \
+    -DKDU_INCLUDE_DIR=~/software/kdu-sdk/v8_4_1-01908E/managed/all_includes \
+    ..
