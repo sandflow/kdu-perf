@@ -10,17 +10,15 @@ find_package(Threads REQUIRED)
 
 # Kakadu SDK support
 
-find_path(KDU_INCLUDE_DIR kdu_args.h PATH_SUFFIXES kakadu)
-find_library(KDU_LIBRARY NAMES kdu)
-find_library(KDU_AUX_LIBRARY NAMES kdu_aux)
+set(KDU_INCLUDE_DIR CACHE PATH "Path to the Kakadu SDK include directory, e.g., managed/all_includes")
+set(KDU_LIBRARY CACHE PATH "Path to the Kakadu library, e.g., libkdu_v84R.so")
+set(KDU_AUX_LIBRARY CACHE PATH "Path to the Kakadu SDK auxiliary library, e.g., libkdu_a84R.so")
 
-if(KDU_INCLUDE_DIR AND KDU_LIBRARY AND KDU_AUX_LIBRARY)
-  set(KDU_PRESENT 1)
-  message("Kakadu SDK found: ${KDU_LIBRARY} and ${KDU_AUX_LIBRARY} and ${KDU_INCLUDE_DIR}")
-  include_directories(${KDU_INCLUDE_DIR})
-else()
-  message("Kakadu SDK not found: ${KDU_LIBRARY} and ${KDU_AUX_LIBRARY} and ${KDU_INCLUDE_DIR}.")
+if(NOT (KDU_INCLUDE_DIR AND KDU_LIBRARY AND KDU_AUX_LIBRARY))
+    message(FATAL_ERROR "You must set KDU_INCLUDE_DIR, KDU_LIBRARY and KDU_AUX_LIBRARY")
 endif()
+
+include_directories(${KDU_INCLUDE_DIR})
 
 # cxxopts
 
