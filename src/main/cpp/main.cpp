@@ -161,6 +161,11 @@ void run(int repetitions, const std::vector<char> &cs_buf, double &avg_time) {
              repetitions;
 }
 
+void print_usage_and_exit( cxxopts::Options options) { 
+  std::cout << options.help() << std::endl; 
+  exit(0);
+}
+
 int main(int argc, char *argv[]) {
   cxxopts::Options options("kdu_perf", "KDU SDK performance tester");
 
@@ -178,9 +183,11 @@ int main(int argc, char *argv[]) {
 
   try {
     result = options.parse(argc, argv);
+    if(result.count("codestream") == 0) {
+      print_usage_and_exit(options);
+    }
   } catch (cxxopts::exceptions::invalid_option_syntax e) {
-    std::cout << options.help() << std::endl;
-    exit(0);
+    print_usage_and_exit(options);
   }
 
   kdu_core::kdu_customize_errors(&error_handler);

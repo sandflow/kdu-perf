@@ -4,28 +4,31 @@ project(kdu-perf)
 
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2")
 
+# Find threading library
+
+find_package(Threads REQUIRED)
+
 # Kakadu SDK support
 
-find_path(KDU_INCLUDE_DIR kdu_args.h PATH_SUFFIXES kakadu)
-find_library(KDU_LIBRARY NAMES kdu_a84R)
+set(KDU_INCLUDE_DIR CACHE PATH "Path to the Kakadu SDK include directory, e.g., managed/all_includes")
+set(KDU_LIBRARY CACHE PATH "Path to the Kakadu library, e.g., libkdu_v84R.so")
+set(KDU_AUX_LIBRARY CACHE PATH "Path to the Kakadu SDK auxiliary library, e.g., libkdu_a84R.so")
 
-if(KDU_INCLUDE_DIR AND KDU_LIBRARY)
-  set(KDU_PRESENT 1)
-  message("Kakadu SDK found: ${KDU_LIBRARY} and ${KDU_INCLUDE_DIR}")
-  include_directories(${KDU_INCLUDE_DIR})
-else()
-  message("Kakadu SDK not found: ${KDU_LIBRARY} and ${KDU_INCLUDE_DIR}.")
+if(NOT (KDU_INCLUDE_DIR AND KDU_LIBRARY AND KDU_AUX_LIBRARY))
+    message(FATAL_ERROR "You must set KDU_INCLUDE_DIR, KDU_LIBRARY and KDU_AUX_LIBRARY")
 endif()
 
-# cxxopts
+include_directories(${KDU_INCLUDE_DIR})
 
+# cxxopts
+set(CMAKE_CXX_STANDARD 11)
 include_directories(ext/cxxopts/include)
 
 # main executable
 
 file(GLOB SRC_FILES src/main/cpp/*)
 add_executable(kdu_perf ${SRC_FILES})
-target_link_libraries(kdu_perf ${KDU_LIBRARY} ${CMAKE_DL_LIBS} pthread)
+target_link_libraries(kdu_perf ${KDU_LIBRARY} ${KDU_AUX_LIBRARY} ${CMAKE_DL_LIBS} Threads::Threads)
 
 # tests
 
