@@ -21,7 +21,7 @@ endif()
 include_directories(${KDU_INCLUDE_DIR})
 
 # cxxopts
-
+set(CMAKE_CXX_STANDARD 11)
 include_directories(ext/cxxopts/include)
 
 # main executable
