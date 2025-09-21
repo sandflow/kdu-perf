@@ -11,8 +11,8 @@ find_package(Threads REQUIRED)
 # Kakadu SDK support
 
 set(KDU_INCLUDE_DIR CACHE PATH "Path to the Kakadu SDK include directory, e.g., managed/all_includes")
-set(KDU_LIBRARY CACHE PATH "Path to the Kakadu library, e.g., libkdu_v84R.so")
-set(KDU_AUX_LIBRARY CACHE PATH "Path to the Kakadu SDK auxiliary library, e.g., libkdu_a84R.so")
+set(KDU_LIBRARY CACHE FILEPATH "Path to the Kakadu library, e.g., libkdu_v84R.so")
+set(KDU_AUX_LIBRARY CACHE FILEPATH "Path to the Kakadu SDK auxiliary library, e.g., libkdu_a84R.so")
 
 if(NOT (KDU_INCLUDE_DIR AND KDU_LIBRARY AND KDU_AUX_LIBRARY))
     message(FATAL_ERROR "You must set KDU_INCLUDE_DIR, KDU_LIBRARY and KDU_AUX_LIBRARY")
