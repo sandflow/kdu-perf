@@ -131,9 +131,16 @@ void run(int repetitions, int num_fibers, const std::vector<char> &cs_buf, doubl
   auto start = std::chrono::high_resolution_clock::now();
 
   for (int i = 0; i < repetitions; i++) {
-    d.start(c, /* force_precise */ false,
-            /* want_fastest */ true,
-            /* multi-threading environment */ &env);
+    if (0 == num_fibers) {
+      d.start(c, /* force_precise */ false,
+              /* want_fastest */ true);
+    }
+    else {
+      d.start(c, /* force_precise */ false,
+              /* want_fastest */ true,
+              /* multi-threading environment */ &env);
+    }
+    
     d.get_recommended_stripe_heights(8, max_stripe_height, stripe_heights, NULL);
 
     bool more_samples = true;
@@ -184,7 +191,7 @@ int main(int argc, char *argv[]) {
       "t,threads", "Number of frames to process in parallel",
       cxxopts::value<int>()->default_value("1"))(
       "f,fibers", "Number of threads per frame",
-      cxxopts::value<int>()->default_value("1"))(
+      cxxopts::value<int>()->default_value("0"))(
       "codestream", "Path to input codestream", cxxopts::value<std::string>());
 
   options.parse_positional({"codestream"});
@@ -213,7 +220,7 @@ int main(int argc, char *argv[]) {
     throw std::runtime_error("Invalid number of threads");
 
   int num_fibers = result["fibers"].as<int>();
-  if (num_fibers < 1)
+  if (num_fibers < 0)
     throw std::runtime_error("Invalid number of fibers");
 
   std::vector<double> avg_times(num_threads);
