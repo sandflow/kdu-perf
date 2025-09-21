@@ -17,7 +17,7 @@ and a separate license for Kakadu SDK must be obained.
 
 ## Prerequisites
 
-* Kakadu SDK library files (version 9.4.1+)
+* Kakadu SDK library files (version 8.4.1+)
 * C++11 toolchains
 * CMake
 
@@ -27,7 +27,8 @@ and a separate license for Kakadu SDK must be obained.
     cd kdu-perf
     mkdir build
     cd build
-    cmake -DKDU_LIBRARY=<path to libkdu_a84R.so> \
+    cmake -DKDU_LIBRARY=<path to libkdu_v84R.so> \
+          -DKDU_AUX_LIBRARY=<path to libkdu_a84R.so> \
           -DKDU_INCLUDE_DIR=<path to Kakadu SDK include headers> \
           ..
     ctest
@@ -39,3 +40,34 @@ and a separate license for Kakadu SDK must be obained.
 
     -r, --repetitions arg  Number of repetitions per thread (default: 100)
     -t, --threads arg      Number of threads (default: 1)
+
+## CMake Examples
+
+### Linux
+
+    cmake \
+    -DKDU_LIBRARY=~/software/kdu-sdk/v8_4_1-01908E/lib/Linux-x86-64-gcc/libkdu_v84R.so \
+    -DKDU_AUX_LIBRARY=~/software/kdu-sdk/v8_4_1-01908E/lib/Linux-x86-64-gcc/libkdu_a84R.so \
+    -DKDU_INCLUDE_DIR=~/software/kdu-sdk/v8_4_1-01908E/managed/all_includes \
+    ..
+
+### Windows
+
+    cmake -DKDU_LIBRARY=../../kdu-sdk/lib_x64/kdu_v84R.lib -DKDU_AUX_LIBRARY=../../kdu-sdk/lib_x64/kdu_a84R.lib -DKDU_INCLUDE_DIR=../../kdu-sdk/v8_4_1-01908E/managed/all_includes ..
+
+### Mac
+
+    cmake \
+    -DKDU_LIBRARY=~/software/kdu-sdk/v8_4_1-01908E/lib/Mac-arm-64-gcc/libkdu_v84R.so \
+    -DKDU_AUX_LIBRARY=~/software/kdu-sdk/v8_4_1-01908E/lib/Mac-arm-64-gcc/libkdu_a84R.so \
+    -DKDU_INCLUDE_DIR=~/software/kdu-sdk/v8_4_1-01908E/managed/all_includes \
+    ..
+
+### Mac (Xcode)
+
+    cmake \
+    -G Xcode \
+    -DKDU_LIBRARY=~/software/kdu-sdk/v8_4_1-01908E/lib/Mac-arm-64-gcc/libkdu_v84R.so \
+    -DKDU_AUX_LIBRARY=~/software/kdu-sdk/v8_4_1-01908E/lib/Mac-arm-64-gcc/libkdu_a84R.so \
+    -DKDU_INCLUDE_DIR=~/software/kdu-sdk/v8_4_1-01908E/managed/all_includes \
+    ..

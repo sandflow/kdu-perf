@@ -116,15 +116,16 @@ void run(int repetitions, int num_fibers, const std::vector<char> &cs_buf, doubl
     is_signed[0] = false;
   }
 
-  // Construct multi-threaded processing environment
+  /* construct multi-threaded processing environment */
   kdu_thread_env env;
   env.create();
   for (int t = 1; t < num_fibers; t++)
     if (! env.add_thread())
       throw std::runtime_error("Cannot allocate the requested number of fibers");
 
-  // Now for the decompression loop
+  /* decoding loop */
   kdu_stripe_decompressor d;
+
   int stripe_heights[COMP_COUNT];
 
   auto start = std::chrono::high_resolution_clock::now();
@@ -157,7 +158,8 @@ void run(int repetitions, int num_fibers, const std::vector<char> &cs_buf, doubl
       }
     }
 
-    d.finish(); // use this function because `env' has not been destroyed
+    /* `finish()` since `env' has not been destroyed */
+    d.finish();
 
     buffer.seek(0);
     c.restart(&buffer);
@@ -167,6 +169,11 @@ void run(int repetitions, int num_fibers, const std::vector<char> &cs_buf, doubl
                  std::chrono::high_resolution_clock::now() - start)
                  .count() /
              repetitions;
+}
+
+void print_usage_and_exit( cxxopts::Options options) { 
+  std::cout << options.help() << std::endl; 
+  exit(0);
 }
 
 int main(int argc, char *argv[]) {
@@ -188,9 +195,11 @@ int main(int argc, char *argv[]) {
 
   try {
     result = options.parse(argc, argv);
+    if(result.count("codestream") == 0) {
+      print_usage_and_exit(options);
+    }
   } catch (cxxopts::exceptions::invalid_option_syntax e) {
-    std::cout << options.help() << std::endl;
-    exit(0);
+    print_usage_and_exit(options);
   }
 
   kdu_core::kdu_customize_errors(&error_handler);
